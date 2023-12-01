@@ -1,0 +1,31 @@
+name: aoc
+version: 0.1.0
+license: MIT
+github: mcwitt/puzzles
+author: Matt Wittmann
+synopsis: Advent of Code solutions
+
+dependencies:
+  - base == 4.*
+  - containers
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - AoC
+
+executables:
+  aoc-y2016-d01:
+    main: Main.hs
+    source-dirs: app/Y2016/D01
+    dependencies:
+        - aoc
+
+# tests:
+#   aoc-tests:
+#     main: Tests.hs
+#     source-dirs: test
+#     dependencies:
+#       - tasty
+#       - tasty-hunit
+#       - tasty-quickcheck
