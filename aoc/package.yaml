@@ -10,6 +10,7 @@ language: GHC2021
 dependencies:
   - base == 4.*
   - containers
+  - linear
 
 library:
   source-dirs: src
