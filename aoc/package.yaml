@@ -5,6 +5,8 @@ github: mcwitt/puzzles
 author: Matt Wittmann
 synopsis: Advent of Code solutions
 
+language: GHC2021
+
 dependencies:
   - base == 4.*
   - containers

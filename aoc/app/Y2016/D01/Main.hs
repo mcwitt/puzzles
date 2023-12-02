@@ -1,9 +1,8 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Main where
 
-import qualified AoC
+import AoC qualified
 import Data.Char (isDigit)
 import Data.Maybe (fromJust)
 import Data.Monoid
