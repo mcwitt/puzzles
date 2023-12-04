@@ -16,6 +16,7 @@ library:
   source-dirs: src
   exposed-modules:
     - AoC
+    - Y2023.D03.Parser
 
 executables:
   aoc-y2016-d01:
@@ -31,6 +32,11 @@ executables:
   aoc-y2023-d02:
     main: Main.hs
     source-dirs: app/Y2023/D02
+    dependencies:
+        - aoc
+  aoc-y2023-d03:
+    main: Main.hs
+    source-dirs: app/Y2023/D03
     dependencies:
         - aoc
 
