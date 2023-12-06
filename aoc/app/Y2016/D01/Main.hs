@@ -4,7 +4,6 @@ module Main where
 
 import AoC qualified
 import Data.Char (isDigit)
-import Data.Maybe (fromJust)
 import Data.Monoid
 import Text.ParserCombinators.ReadP
 

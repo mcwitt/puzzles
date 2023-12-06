@@ -16,7 +16,7 @@ data Color = Red | Green | Blue deriving (Show)
 parse :: String -> [(Int, [[(Int, Color)]])]
 parse s = head [x | (x, "") <- readP_to_S games s]
   where
-    games = game `sepBy` char '\n' <* char '\n'
+    games = game `endBy` char '\n'
     game =
       (,)
         <$ string "Game "

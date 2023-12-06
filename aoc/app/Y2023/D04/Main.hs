@@ -19,7 +19,7 @@ data Card = MkCard
 parse :: String -> [Card]
 parse s = head [x | (x, "") <- readP_to_S cards s]
   where
-    cards = card `sepBy` char '\n' <* char '\n'
+    cards = card `endBy` char '\n'
     card =
       MkCard
         <$ string "Card"
