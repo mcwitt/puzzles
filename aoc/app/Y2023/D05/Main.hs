@@ -1,8 +1,7 @@
 module Main where
 
 import AoC qualified
-import Data.Char (isDigit, isSpace)
-import Data.Semigroup (Endo (Endo, appEndo))
+import Data.Char (isDigit)
 import Text.ParserCombinators.ReadP
 
 main = AoC.mkMain solution
@@ -23,22 +22,36 @@ parse s = head [x | (x, "") <- readP_to_S input s]
     mapping = line *> mappingElem `endBy` newline
     mappingElem = (,,) <$> nat <* spaces <*> nat <* spaces <*> nat <* optional spaces
 
-mkEndo :: Mapping -> Endo Int
-mkEndo [] = Endo id
-mkEndo ((dst, src, n) : xs) =
-  Endo
-    ( \x ->
-        if src <= x && x < src + n
-          then dst + (x - src)
-          else appEndo (mkEndo xs) x
-    )
+apply :: Mapping -> Int -> Int
+apply [] x = x
+apply ((dst, src, n) : xs) x
+  | src <= x && x < src + n = dst + (x - src)
+  | otherwise = apply xs x
 
+solve1 :: ([Int], [Mapping]) -> Int
 solve1 (seeds, mappings) =
-  minimum $ map (appEndo (foldMap mkEndo (reverse mappings))) seeds
+  minimum $ map (\seed -> foldl (flip apply) seed mappings) seeds
 
-solve2 (flatRanges, mappings) =
-  let ranges = chunksOf 2 flatRanges
-      chunksOf _ [] = []
-      chunksOf n xs = take n xs : chunksOf n (drop n xs)
-      seeds = ranges >>= \[start, len] -> [start .. start + len - 1]
-   in minimum $ map (appEndo (foldMap mkEndo (reverse mappings))) seeds
+type Interval = (Int, Int)
+
+apply' :: Mapping -> Interval -> [Interval]
+apply' [] t = [t]
+apply' ((dst, src, n) : ms) (a1, b1)
+  | b1 < a2 || b2 < a1 = apply' ms (a1, b1) -- no mapping
+  | a2 <= a1 && b1 <= b2 = [(a1 + d, b1 + d)] -- complete mapping
+  | a1 < a2 && b1 <= b2 = (a2 + d, b1 + d) : apply' ms (a1, a2 - 1) -- right mapped
+  | a2 <= a1 && b2 < b1 = (a1 + d, b2 + d) : apply' ms (b2 + 1, b1) -- left mapped
+  | a1 < a2 && b2 < b1 = (a2 + d, b2 + d) : concatMap (apply' ms) [(a1, a2 - 1), (b2 + 1, b1)] -- middle mapped
+  where
+    (a2, b2) = (src, src + n - 1)
+    d = dst - src
+
+evens (x : _ : xs) = x : evens xs
+evens [x] = [x]
+evens _ = []
+
+solve2 :: ([Int], [Mapping]) -> Int
+solve2 (xs, mappings) =
+  minimum $ map fst $ foldl (\ts m -> concatMap (apply' m) ts) ivals mappings
+  where
+    ivals = zipWith (\start n -> (start, start + n - 1)) (evens xs) (evens (tail xs))
