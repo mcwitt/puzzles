@@ -5,28 +5,16 @@ module Main where
 import AoC qualified
 import Data.Bifunctor (first)
 import Data.Char (isDigit)
-import Data.List (group, sort)
+import Data.List (group, sort, sortBy)
+import Data.Ord (Down (Down), comparing)
 import Text.ParserCombinators.ReadP
 
 main = AoC.mkMain solution
 
 solution = AoC.Solution parse solve1 solve2
 
-data Card
-  = Two
-  | Three
-  | Four
-  | Five
-  | Six
-  | Seven
-  | Eight
-  | Nine
-  | T
-  | J
-  | Q
-  | K
-  | A
-  deriving (Bounded, Enum, Eq, Ord, Show)
+data Card = Two | Three | Four | Five | Six | Seven | Eight | Nine | T | J | Q | K | A
+  deriving (Enum, Eq, Ord, Show)
 
 parse :: String -> [([Card], Int)]
 parse s = head [x | (x, "") <- readP_to_S input s]
@@ -54,37 +42,42 @@ parse s = head [x | (x, "") <- readP_to_S input s]
     newline = char '\n'
     nat :: ReadP Int = read <$> many1 (satisfy isDigit)
 
-data Kind
-  = HighCard
-  | OnePair
-  | TwoPair
-  | ThreeOfAKind
-  | FullHouse
-  | FourOfAKind
-  | FiveOfAKind
+data Kind = HighCard | OnePair | TwoPair | ThreeOfAKind | FullHouse | FourOfAKind | FiveOfAKind
   deriving (Eq, Enum, Ord, Show)
 
-kind xs = case sort (map length (group (sort xs))) of
-  [5] -> FiveOfAKind
-  [1, 4] -> FourOfAKind
-  [2, 3] -> FullHouse
-  [1, 1, 3] -> ThreeOfAKind
-  [1, 2, 2] -> TwoPair
-  [1, 1, 1, 2] -> OnePair
-  [1, 1, 1, 1, 1] -> HighCard
+kind cards = case sortBy (comparing Down) $ map length $ group $ sort cards of
+  5 : _ -> FiveOfAKind
+  4 : _ -> FourOfAKind
+  3 : 2 : _ -> FullHouse
+  3 : _ -> ThreeOfAKind
+  2 : 2 : _ -> TwoPair
+  2 : _ -> OnePair
+  _ -> HighCard
 
 solve1 = sum . zipWith (*) [1 ..] . map snd . sort . map (first (\xs -> (kind xs, xs)))
 
 fromEnum2 :: Card -> Int
-fromEnum2 = \case
-  J -> -1
-  x -> fromEnum x
+fromEnum2 J = -1
+fromEnum2 x = fromEnum x
 
-kind2 xs = maximum (map kind (expand xs))
+kind2 cards =
+  let (withoutJokers, numJokers) = getJokers cards
+   in iterate addWild (kind withoutJokers) !! numJokers
   where
-    expand :: [Card] -> [[Card]]
-    expand [] = [[]]
-    expand (J : xs) = [x : ys | x <- [minBound .. maxBound], ys <- expand xs]
-    expand (x : xs) = [x : ys | ys <- expand xs]
+    addWild = \case
+      HighCard -> OnePair
+      OnePair -> ThreeOfAKind
+      TwoPair -> FullHouse
+      ThreeOfAKind -> FourOfAKind
+      FullHouse -> FourOfAKind
+      FourOfAKind -> FiveOfAKind
+      FiveOfAKind -> FiveOfAKind
+    getJokers =
+      foldr
+        ( \x (ys, n) -> case x of
+            J -> (ys, n + 1)
+            y -> (y : ys, n)
+        )
+        ([], 0)
 
 solve2 = sum . zipWith (*) [1 ..] . map snd . sort . map (first (\xs -> (kind2 xs, map fromEnum2 xs)))
