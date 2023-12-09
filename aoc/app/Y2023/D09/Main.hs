@@ -15,8 +15,8 @@ diffs = takeWhile (not . all (== 0)) . iterate diff
 
 solve1 = sum . map extrapolate
   where
-    extrapolate = sum . map last . diffs
+    extrapolate = foldr ((+) . last) 0 . diffs
 
 solve2 = sum . map extrapolateBackwards
   where
-    extrapolateBackwards = foldl1 (flip (-)) . (0 :) . reverse . map head . diffs
+    extrapolateBackwards = foldr ((-) . head) 0 . diffs
