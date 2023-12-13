@@ -12,6 +12,7 @@ dependencies:
   - containers
   - linear
   - mtl
+  - split
   - vector
 
 library:
@@ -84,6 +85,11 @@ executables:
   aoc-y2023-d12:
     main: Main.hs
     source-dirs: app/Y2023/D12
+    dependencies:
+        - aoc
+  aoc-y2023-d13:
+    main: Main.hs
+    source-dirs: app/Y2023/D13
     dependencies:
         - aoc
 
