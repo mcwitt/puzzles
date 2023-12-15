@@ -1,9 +1,10 @@
 module Main (main) where
 
 import AoC qualified
-import Data.List (foldl', intercalate, sortBy, transpose)
+import Data.List (foldl', intercalate, sort, sortOn, transpose)
 import Data.List.Split (splitOn)
 import Data.Map qualified as Map
+import Data.Ord
 
 main = AoC.mkMain solution
 
@@ -11,17 +12,13 @@ solution = AoC.Solution parse solve1 solve2
 
 parse = lines
 
-cmp 'O' '.' = LT
-cmp '.' 'O' = GT
-cmp _ _ = EQ
-
-settle = intercalate "#" . map (sortBy cmp) . splitOn "#"
+settle = intercalate "#" . map (sortOn Down) . splitOn "#"
 
 solve1 = sum . concatMap (load . settle) . transpose
 
 load xs = [r | ('O', r) <- zip xs (reverse [1 .. length xs])]
 
-settleDown = intercalate "#" . map (sortBy (flip cmp)) . splitOn "#"
+settleDown = intercalate "#" . map sort . splitOn "#"
 
 findCycle :: (Ord a) => [a] -> Maybe (Int, Int)
 findCycle = go Map.empty . zip [0 ..]
