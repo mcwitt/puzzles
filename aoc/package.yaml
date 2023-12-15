@@ -11,6 +11,7 @@ dependencies:
   - base == 4.*
   - containers
   - linear
+  - MemoTrie
   - mtl
   - split
   - vector

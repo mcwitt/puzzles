@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+
 module Main (main) where
 
 import AoC qualified
@@ -5,13 +7,21 @@ import Control.Monad.State
 import Data.Char (isDigit)
 import Data.List (splitAt)
 import Data.Map qualified as Map
+import Data.MemoTrie
+import GHC.Generics
 import Text.ParserCombinators.ReadP
 
 main = AoC.mkMain solution
 
 solution = AoC.Solution parse solve1 solve2
 
-data Record = KnownOperational | KnownDamaged | Unknown deriving (Eq, Ord, Show)
+data Record = KnownOperational | KnownDamaged | Unknown deriving (Eq, Ord, Generic)
+
+instance HasTrie Record where
+  newtype Record :->: b = RecordTrie {unRecordTrie :: Reg Record :->: b}
+  trie = trieGeneric RecordTrie
+  untrie = untrieGeneric unRecordTrie
+  enumerate = enumerateGeneric unRecordTrie
 
 data Condition = Operational | Damaged deriving (Eq)
 
@@ -51,31 +61,19 @@ validArrangements = go
 
 solve1 rows = sum [length (validArrangements row) | row <- rows]
 
-memoFix f k = do
-  maybeVal <- gets (Map.lookup k)
-  case maybeVal of
-    Just v -> return v
-    Nothing -> do
-      v <- f (memoFix f) k
-      modify (Map.insert k v)
-      return v
-
 countValidArrangements :: Row -> Int
-countValidArrangements = flip evalState Map.empty . memoFix go
+countValidArrangements = memoFix go
   where
     go f (KnownOperational : xs, ns) = f (xs, ns)
-    go f (Unknown : xs, ns) = do
-      n1 <- f (KnownOperational : xs, ns)
-      n2 <- f (KnownDamaged : xs, ns)
-      return (n1 + n2)
+    go f (Unknown : xs, ns) = do f (KnownOperational : xs, ns) + f (KnownDamaged : xs, ns)
     go f (KnownDamaged : xs, n : ns) = case splitAt (n - 1) xs of
       (xs, []) | length (filter possiblyDamaged xs) == n - 1 -> f ([], ns)
-      (_, []) -> return 0
+      (_, []) -> 0
       (xs, yys@(y : ys)) | all possiblyDamaged xs && y /= KnownDamaged -> f (ys, ns)
-      (_, _ : _) -> return 0
-    go _ (xs@(KnownDamaged : _), []) = return 0
-    go _ ([], _ : _) = return 0
-    go _ ([], []) = return 1
+      (_, _ : _) -> 0
+    go _ (xs@(KnownDamaged : _), []) = 0
+    go _ ([], _ : _) = 0
+    go _ ([], []) = 1
 
 solve2 rows =
   let n = 5
