@@ -98,6 +98,11 @@ executables:
     source-dirs: app/Y2023/D14
     dependencies:
         - aoc
+  aoc-y2023-d15:
+    main: Main.hs
+    source-dirs: app/Y2023/D15
+    dependencies:
+        - aoc
 
 # tests:
 #   aoc-tests:
