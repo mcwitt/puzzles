@@ -9,6 +9,7 @@ language: GHC2021
 
 dependencies:
   - base == 4.*
+  - array
   - containers
   - linear
   - MemoTrie
@@ -101,6 +102,11 @@ executables:
   aoc-y2023-d15:
     main: Main.hs
     source-dirs: app/Y2023/D15
+    dependencies:
+        - aoc
+  aoc-y2023-d16:
+    main: Main.hs
+    source-dirs: app/Y2023/D16
     dependencies:
         - aoc
 
