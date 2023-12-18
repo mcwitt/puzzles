@@ -11,6 +11,7 @@ dependencies:
   - base == 4.*
   - array
   - containers
+  - heaps
   - linear
   - MemoTrie
   - mtl
@@ -107,6 +108,11 @@ executables:
   aoc-y2023-d16:
     main: Main.hs
     source-dirs: app/Y2023/D16
+    dependencies:
+        - aoc
+  aoc-y2023-d17:
+    main: Main.hs
+    source-dirs: app/Y2023/D17
     dependencies:
         - aoc
 
