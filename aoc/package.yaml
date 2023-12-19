@@ -15,6 +15,7 @@ dependencies:
   - linear
   - MemoTrie
   - mtl
+  - recursion-schemes
   - split
   - vector
 
@@ -118,6 +119,11 @@ executables:
   aoc-y2023-d18:
     main: Main.hs
     source-dirs: app/Y2023/D18
+    dependencies:
+        - aoc
+  aoc-y2023-d19:
+    main: Main.hs
+    source-dirs: app/Y2023/D19
     dependencies:
         - aoc
 
