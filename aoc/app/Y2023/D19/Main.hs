@@ -41,32 +41,28 @@ parse s = head [x | (x, "") <- readP_to_S input s]
     fromMap m = case traverse (m Map.!?) [X, M, A, S] of
       Just [x, m, a, s] -> MkPart x m a s
 
-proj :: Category -> Part a -> a
 proj X (MkPart x _ _ _) = x
 proj M (MkPart _ m _ _) = m
 proj A (MkPart _ _ a _) = a
 proj S (MkPart _ _ _ s) = s
 
-inj :: Category -> a -> Part a -> Part a
-inj X x' (MkPart x m a s) = MkPart x' m a s
-inj M m' (MkPart x m a s) = MkPart x m' a s
-inj A a' (MkPart x m a s) = MkPart x m a' s
-inj S s' (MkPart x m a s) = MkPart x m a s'
+inj X x (MkPart _ m a s) = MkPart x m a s
+inj M m (MkPart x _ a s) = MkPart x m a s
+inj A a (MkPart x m _ s) = MkPart x m a s
+inj S s (MkPart x m a _) = MkPart x m a s
 
 step :: Part Int -> Workflow -> Label
 step part ([], def) = def
-step part ((category, comparator, threshold, toLabel) : cases, def)
-  | compare (proj category part) threshold == comparator = toLabel
+step part ((category, comparator, score, toLabel) : cases, def)
+  | compare (proj category part) score == comparator = toLabel
   | otherwise = step part (cases, def)
 
 data Status = Accepted | Rejected deriving (Eq, Show)
 
-untilLeft :: (a -> Either r a) -> a -> r
 untilLeft f x = case f x of
   Right x' -> untilLeft f x'
   Left r -> r
 
-stepToEnd :: Part Int -> Label -> (Label -> Workflow) -> Status
 stepToEnd part start lookup = untilLeft go start
   where
     go :: Label -> Either Status Label
@@ -84,7 +80,7 @@ solve1 (workflows, parts) =
 
 data Range a = a :.. a | Empty deriving (Show)
 
-instance (Num a, Ord a) => Semigroup (Range a) where
+instance (Ord a) => Semigroup (Range a) where
   _ <> Empty = Empty
   Empty <> _ = Empty
   lo1 :.. hi1 <> lo2 :.. hi2
@@ -92,11 +88,11 @@ instance (Num a, Ord a) => Semigroup (Range a) where
     | lo1 <= lo2 && lo2 < hi1 = lo2 :.. min hi1 hi2
     | otherwise = lo1 :.. min hi2 hi1
 
-instance (Num a, Ord a) => Monoid (Range a) where
-  mempty = 1 :.. 4000
+instance (Bounded a, Ord a) => Monoid (Range a) where
+  mempty = minBound :.. maxBound
 
 rangeSize Empty = 0
-rangeSize (s :.. e) = e - s + 1
+rangeSize (Score s :.. Score e) = e - s + 1
 
 instance (Semigroup a) => Semigroup (Part a) where
   MkPart x1 m1 a1 s1 <> MkPart x2 m2 a2 s2 = MkPart (x1 <> x2) (m1 <> m2) (a1 <> a2) (s1 <> s2)
@@ -104,21 +100,13 @@ instance (Semigroup a) => Semigroup (Part a) where
 instance (Monoid a) => Monoid (Part a) where
   mempty = MkPart mempty mempty mempty mempty
 
-type Constraints = Part (Range Int)
+newtype Score = Score {getScore :: Int} deriving (Eq, Ord)
 
-branches :: Workflow -> [(Constraints, Label)]
-branches (cases, def) =
-  let constraints = map mkConstraint cases ++ [mempty]
-      contexts = mempty : scanl1 (<>) (map mkConstraintC cases)
-      labels = map (\(_, _, _, label) -> label) cases ++ [def]
-   in zip (zipWith (<>) constraints contexts) labels
-  where
-    mkConstraint (category, comparator, threshold, _) = inj category (mkRange threshold comparator) mempty
-    mkConstraintC (category, comparator, threshold, _) = inj category (mkRangeC threshold comparator) mempty
-    mkRange x LT = 1 :.. (x - 1)
-    mkRange x GT = (x + 1) :.. 4000
-    mkRangeC x LT = x :.. 4000
-    mkRangeC x GT = 1 :.. x
+instance Bounded Score where
+  minBound = Score 1
+  maxBound = Score 4_000
+
+type Constraints = Part (Range Score)
 
 mkConstraintTree :: (Label -> Workflow) -> Constraints -> Label -> Tree Constraints
 mkConstraintTree lookup = go
@@ -127,7 +115,20 @@ mkConstraintTree lookup = go
     go cs "A" = Node cs []
     go cs label = Node cs [go cs' label' | (cs', label') <- branches (lookup label)]
 
-constraints :: Tree (Part (Range Int)) -> [Constraints]
+    branches (cases, def) =
+      let constraints = map mkConstraint cases ++ [mempty]
+          contexts = mempty : scanl1 (<>) (map mkConstraintC cases)
+          labels = map (\(_, _, _, label) -> label) cases ++ [def]
+       in zip (zipWith (<>) constraints contexts) labels
+      where
+        mkConstraint (category, comparator, score, _) = inj category (mkRange score comparator) mempty
+        mkConstraintC (category, comparator, score, _) = inj category (mkRangeC score comparator) mempty
+        mkRange x LT = minBound :.. Score (x - 1)
+        mkRange x GT = Score (x + 1) :.. maxBound
+        mkRangeC x LT = Score x :.. maxBound
+        mkRangeC x GT = minBound :.. Score x
+
+constraints :: Tree (Part (Range Score)) -> [Constraints]
 constraints = cata alg
   where
     alg :: TreeF Constraints [Constraints] -> [Constraints]
