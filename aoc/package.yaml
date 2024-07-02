@@ -7,6 +7,10 @@ synopsis: Advent of Code solutions
 
 language: GHC2021
 
+ghc-options:
+  - -Wunused-binds
+  - -Wunused-imports
+
 dependencies:
   - base == 4.*
   - array
