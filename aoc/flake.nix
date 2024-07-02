@@ -31,6 +31,7 @@
             haskell-language-server
             ghcid
             cabal-install
+            weeder
           ]);
         });
     };
