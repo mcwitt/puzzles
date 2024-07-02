@@ -1,81 +1,61 @@
-{-# LANGUAGE LambdaCase #-}
-
-module Main where
-
-import AoC qualified
-import Data.Char (isDigit)
-import Data.Monoid
-import Text.ParserCombinators.ReadP
+import AoC (Solution (Solution), mkMain)
+import Data.List (foldl', scanl')
+import Data.List.Split (splitOn)
+import Data.Set qualified as Set
+import Linear.V2 (V2 (V2))
+import Linear.Vector (zero, (*^))
 
 main :: IO ()
-main = AoC.mkMain solution
+main = mkMain (Solution parse part1 part2)
 
-solution = AoC.Solution parse solve1 solve2
+data C4 = I | L | U | R deriving (Show, Enum)
 
-type Input = [(LR, Distance)]
+instance Semigroup C4 where
+  x <> y = toEnum ((fromEnum x + fromEnum y) `mod` 4)
 
-data LR = L | R deriving (Show)
-
-newtype Distance = Dist {getDistance :: Int} deriving (Show)
-
-parse :: String -> Input
-parse = fst . head . readP_to_S input
+parse :: String -> [(C4, Int)]
+parse = map (\(x : xs) -> (mkTurns x, read xs)) . splitOn ", "
   where
-    lr = (L <$ char 'L') <++ (R <$ char 'R')
-    nat = Dist . read <$> munch isDigit
-    pair = (,) <$> lr <*> nat
-    pairs = pair `sepBy1` string ", "
-    input = pairs <* char '\n'
+    mkTurns 'R' = R
+    mkTurns 'L' = L
+    mkTurns _ = error "invalid input"
 
-newtype Turn = T Int
+unit :: C4 -> V2 Int
+unit I = V2 1 0
+unit L = V2 0 1
+unit R = V2 0 (-1)
+unit U = V2 (-1) 0
 
-turn :: LR -> Turn
-turn L = T 3
-turn R = T 1
+update :: (C4, V2 Int) -> (C4, Int) -> (C4, V2 Int)
+update (h, u) (r, d) =
+  let h' = h <> r
+   in (h', u + d *^ unit h')
 
-instance Semigroup Turn where
-  T x <> T y = T ((x + y) `mod` 4)
+manhattan :: (Num a) => V2 a -> a
+manhattan (V2 x y) = abs x + abs y
 
-instance Monoid Turn where
-  mempty = T 0
+part1 :: [(C4, Int)] -> Int
+part1 inp =
+  let init = (I, zero)
+      (_, p) = foldl' update init inp
+   in manhattan p
 
-mconcats :: (Monoid m) => [m] -> [m]
-mconcats = scanl (<>) mempty
+offsets :: C4 -> [(C4, Int)] -> [V2 Int]
+offsets _ [] = []
+offsets h ((dh, d) : xs) =
+  let h' = h <> dh
+   in replicate d (unit h') ++ offsets h' xs
 
-newtype Heading = H Turn
+firstRepeat :: (Ord a) => [a] -> Maybe a
+firstRepeat = go Set.empty
+  where
+    go _ [] = Nothing
+    go seen (x : xs)
+      | Set.member x seen = Just x
+      | otherwise = go (Set.insert x seen) xs
 
-headings :: [LR] -> [Heading]
-headings = map H . mconcats . map turn
-
-data V2 a = V2 !a !a deriving (Show)
-
-instance (Semigroup a) => Semigroup (V2 a) where
-  V2 x1 y1 <> V2 x2 y2 = V2 (x1 <> y1) (x2 <> y2)
-
-instance (Monoid a) => Monoid (V2 a) where
-  mempty = V2 mempty mempty
-
-newtype Displacement = Disp (V2 (Sum Int)) deriving (Show, Semigroup, Monoid)
-
-displacement :: Distance -> Heading -> Displacement
-displacement (Dist x) =
-  let d = Sum x
-   in \case
-        H (T 0) -> Disp (V2 0 d)
-        H (T 1) -> Disp (V2 d 0)
-        H (T 2) -> Disp (V2 0 (-d))
-        H (T 3) -> Disp (V2 (-d) 0)
-
-manhattan :: Displacement -> Distance
-manhattan (Disp (V2 (Sum x) (Sum y))) = Dist (abs x + abs y)
-
-solve1 :: Input -> Int
-solve1 inp =
-  let (turns, dists) = unzip inp
-      hdgs = headings turns
-      disps = zipWith displacement dists hdgs
-      finalDisp = mconcat disps
-      answer = getDistance (manhattan finalDisp)
-   in answer
-
-solve2 = id
+part2 :: [(C4, Int)] -> Int
+part2 inp =
+  let path = scanl' (+) 0 (offsets I inp)
+      Just u = firstRepeat path
+   in manhattan u
