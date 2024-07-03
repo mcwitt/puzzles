@@ -1,9 +1,10 @@
 import AoC (Solution (Solution), mkMain)
 import Data.List (foldl', scanl')
 import Data.List.Split (splitOn)
+import Data.Maybe (fromJust)
 import Data.Set qualified as Set
 import Linear.V2 (V2 (V2))
-import Linear.Vector (zero, (*^))
+import Linear.Vector ((*^))
 
 main :: IO ()
 main = mkMain (Solution parse part1 part2)
@@ -26,25 +27,22 @@ unit L = V2 0 1
 unit R = V2 0 (-1)
 unit U = V2 (-1) 0
 
-update :: (C4, V2 Int) -> (C4, Int) -> (C4, V2 Int)
-update (h, u) (r, d) =
-  let h' = h <> r
-   in (h', u + d *^ unit h')
+offsets :: [(C4, Int)] -> [V2 Int]
+offsets xs =
+  let (t : ts, ds) = unzip xs
+      hs = scanl' (<>) t ts
+   in zipWith (\h d -> d *^ unit h) hs ds
 
 manhattan :: (Num a) => V2 a -> a
 manhattan (V2 x y) = abs x + abs y
 
-part1 :: [(C4, Int)] -> Int
-part1 inp =
-  let init = (I, zero)
-      (_, p) = foldl' update init inp
-   in manhattan p
+part1 = manhattan . foldl' (+) 0 . offsets
 
-offsets :: C4 -> [(C4, Int)] -> [V2 Int]
-offsets _ [] = []
-offsets h ((dh, d) : xs) =
-  let h' = h <> dh
-   in replicate d (unit h') ++ offsets h' xs
+offsets' :: [(C4, Int)] -> [V2 Int]
+offsets' xs =
+  let (t : ts, ds) = unzip xs
+      hs = scanl' (<>) t ts
+   in concat $ zipWith (\h d -> replicate d (unit h)) hs ds
 
 firstRepeat :: (Ord a) => [a] -> Maybe a
 firstRepeat = go Set.empty
@@ -54,8 +52,4 @@ firstRepeat = go Set.empty
       | Set.member x seen = Just x
       | otherwise = go (Set.insert x seen) xs
 
-part2 :: [(C4, Int)] -> Int
-part2 inp =
-  let path = scanl' (+) 0 (offsets I inp)
-      Just u = firstRepeat path
-   in manhattan u
+part2 = manhattan . fromJust . firstRepeat . scanl' (+) 0 . offsets'
