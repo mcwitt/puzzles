@@ -50,6 +50,14 @@ executables:
     source-dirs: app/Y2016/D04
     dependencies:
         - aoc
+  aoc-y2016-d05:
+    main: Main.hs
+    source-dirs: app/Y2016/D05
+    dependencies:
+        - aoc
+        - base16-bytestring
+        - bytestring
+        - cryptohash-md5
   aoc-y2023-d01:
     main: Main.hs
     source-dirs: app/Y2023/D01
