@@ -58,6 +58,11 @@ executables:
         - base16-bytestring
         - bytestring
         - cryptohash-md5
+  aoc-y2016-d06:
+    main: Main.hs
+    source-dirs: app/Y2016/D06
+    dependencies:
+        - aoc
   aoc-y2023-d01:
     main: Main.hs
     source-dirs: app/Y2023/D01
