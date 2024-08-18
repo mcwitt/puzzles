@@ -63,6 +63,11 @@ executables:
     source-dirs: app/Y2016/D06
     dependencies:
         - aoc
+  aoc-y2016-d07:
+    main: Main.hs
+    source-dirs: app/Y2016/D07
+    dependencies:
+        - aoc
   aoc-y2023-d01:
     main: Main.hs
     source-dirs: app/Y2023/D01
